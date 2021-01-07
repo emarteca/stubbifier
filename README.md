@@ -14,6 +14,7 @@ Place this in the root directory of this repo.
 Then, from the root of the repo, you can build and run the docker image.
 
 To build the docker image: `docker build -t stubbifier . `
+
 To run it: `./runDocker.sh`
 
 Now, you'll be in the `/home/stubbifier` directory of the docker image.
@@ -21,16 +22,16 @@ Now, you'll be in the `/home/stubbifier` directory of the docker image.
 
 ## Usage 
 
-In the /home/stubbifier directory of the docker image, the steps to use stubbifier are as follows:
-1. Clone the project you want to transform
+In the /home/stubbifier directory of the docker image, the steps to use `stubbifier` are as follows:
+1. Clone the project you want to debloat
 2. Generate a callgraph for this project (based on its own tests)
-3. Run the stubbifier!
+3. Run `stubbifier` on the project!
 
 Example uses (of applying `stubbifier` to some projects from our evaluation in the associated paper) are included below as a guide.
 
 ### Example uses
 
-Here are some annotated example uses.
+Here are some annotated examples of applying `stubbifier` to some JavaScript applications (taken from the evaluation in the associated paper).
 
 #### `redux`
 To run `stubbifier` with the dynamic callgraph analysis on [`redux`](https://github.com/reduxjs/redux), use the following commands (from `/home/stubbifier` in the docker image).
