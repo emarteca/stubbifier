@@ -17,6 +17,6 @@ if [ ! -d "QLDBs/$projName" ]; then
 fi
 
 # run the query
-codeql query run --search-path=$ANALYSIS_HOME --database QLDBs/$projName --output=tempOut.bqrs $3
+codeql query run --search-path=$ANALYSIS_HOME --database QLDBs/$projName --output=tempOut.bqrs static_cg.ql
 codeql bqrs decode --format=csv tempOut.bqrs > $projRoot/static_callgraph.csv
 rm tempOut.bqrs
