@@ -104,6 +104,27 @@ cd ../..
 ./transform.sh Playground/serve-static "static"
 ```
 
+### Computing code size (how much was debloated?)
+To determine the size reduction due to running `stubbifier` on `redux`, run the following command before and after applying the stubbifier and compare the sizes.
+```
+# after computing the dependencies 
+node getCodeSize.js --to_measure_size Playground/redux/ --dependencies Playground/redux/dep_list.txt
+
+```
+With today (January 20, 2021)'s master clone of `redux` and its installed dependencies, we get the following sizes:
+* Before stubbifying: 266943 bytes
+* After stubbifying with the dynamic callgraph: 189900 bytes
+
+
+Similarly, for `serve-static`:
+```
+# after computing the dependencies 
+node getCodeSize.js --to_measure_size Playground/serve-static/ --dependencies Playground/serve-static/dep_list.txt
+
+```
+With today (January 20, 2021)'s master clone of `serve-static` and its installed dependencies, we get the following sizes:
+* Before stubbifying: 106267 bytes
+* After stubbifying with the dynamic callgraph: 92824 bytes
 
 ## Running outside docker
 
