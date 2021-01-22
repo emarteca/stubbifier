@@ -34,13 +34,17 @@ function shouldStubbify( curPath: string, file: string, depList: string[]): bool
 /*
 		PROJECT FLAGS
 */
-let safeEvalMode = true;	// do we try to intercept evals?
+let safeEvalMode = true;	// do we try to intercept evals? default is true
+
+if (argv.guarded_exec_mode == "false") 
+	safeEvalMode = false;
+
 let testingMode = true;		// do we add console.logs?
 let recurseThroughDirs = true;
 
 // 2 TODO
 if ( (! argv.transform) || ( argv.callgraph && argv.uncovered)) {
-    console.log('Usage: stubbifyRunner.js --transform [file.js | dir] [[--callgraph callgraphFile.csv] | [--uncovered coverageReport.json]]');
+    console.log('Usage: stubbifyRunner.js --transform [file.js | dir] [[--callgraph callgraphFile.csv] | [--uncovered coverageReport.json]] [--guarded_exec_mode [true | false]]');
     process.exit(1);
 }
 

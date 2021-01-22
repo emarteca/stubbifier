@@ -9,11 +9,16 @@ realpathMACHACK() {
 
 transformType=$2
 projDir=$1
+guardedMode="true"
+
+if [ "$#" == 3 ]; then
+	guardedMode=$3
+fi
 
 if [[ "$transformType" == "dynamic" ]]; then
-	node stubbifyRunner.js --transform $projDir --uncovered `realpathMACHACK $projDir/coverage/coverage-final.json` --dependencies $projDir/dep_list.txt
+	node stubbifyRunner.js --transform $projDir --uncovered `realpathMACHACK $projDir/coverage/coverage-final.json` --dependencies $projDir/dep_list.txt --guarded_exec_mode $guardedMode
 elif [[ "$transformType" == "static" ]]; then 
-	node stubbifyRunner.js --transform $projDir --callgraph `realpathMACHACK $projDir/static_callgraph.csv` --dependencies $projDir/dep_list.txt
+	node stubbifyRunner.js --transform $projDir --callgraph `realpathMACHACK $projDir/static_callgraph.csv` --dependencies $projDir/dep_list.txt --guarded_exec_mode $guardedMode
 else
 	echo "Error: transform_type must be either \"dynamic\" or \"static\""
 	echo "Usage: ./transform.sh proj_dir ( \"dynamic\" | \"static\" )"

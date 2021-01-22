@@ -169,7 +169,7 @@ function stubifyFile(filename: string, safeEvalMode = false, testingMode = false
 	let ast: babel.Program;
 	let esmMode: boolean;
 	try {
-		ast = parse(code, {sourceType: "unambiguous", plugins: [ "classProperties"]}).program;
+		ast = parse(code, {sourceType: "unambiguous", plugins: [ "classProperties", "typescript" ]}).program;
 		esmMode = ast.sourceType == "module";
 	} catch(e) {
 		console.error("Yikes... parsing error in " + filename + ":  " + e);

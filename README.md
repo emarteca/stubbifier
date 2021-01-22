@@ -54,7 +54,10 @@ cd ../..
 
 # now, we can run the stubbifier
 # note that this assumes you've already generated the dep_list and coverage info above
-./transform.sh Playground/redux "dynamic"
+# also note: the final argument to transform is specifying the guarded execution mode (i.e. eval checking)
+# if this argument is not specified, it defaults to true
+# passing "false" here means to *not* run in guarded execution mode
+./transform.sh Playground/redux "dynamic" false
 
 ```
 Now `redux` has been stubbed.
@@ -73,7 +76,7 @@ python genDepList.py Playground/redux/ "npm install "
 
 # now, we can run the stubbifier
 # note that this assumes you've already generated the dep_list and the static callgraph above
-./transform.sh Playground/redux "static"
+./transform.sh Playground/redux "static" false
 ```
 
 #### `serve-static`
@@ -93,6 +96,8 @@ cd Playground/serve-static
 nyc npm run test 
 cd ../..
 
+# here, as a demonstrative example, we are calling the transformer without
+# the guarded execution mode argument (so it's defaulting to true)
 ./transform.sh Playground/serve-static "dynamic"
 
 # then, reset serve-static 
