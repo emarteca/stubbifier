@@ -19,6 +19,8 @@ if [[ "$transformType" == "dynamic" ]]; then
 	node stubbifyRunner.js --transform $projDir --uncovered `realpathMACHACK $projDir/coverage/coverage-final.json` --dependencies $projDir/dep_list.txt --guarded_exec_mode $guardedMode
 elif [[ "$transformType" == "static" ]]; then 
 	node stubbifyRunner.js --transform $projDir --callgraph `realpathMACHACK $projDir/static_callgraph.csv` --dependencies $projDir/dep_list.txt --guarded_exec_mode $guardedMode
+elif [[ "$transformType" == "hybrid" ]]; then
+	node stubbifyRunner.js --transform $projDir --callgraph `realpathMACHACK $projDir/static_callgraph.csv` --uncovered `realpathMACHACK $projDir/coverage/coverage-final.json` --dependencies $projDir/dep_list.txt --guarded_exec_mode $guardedMode
 else
 	echo "Error: transform_type must be either \"dynamic\" or \"static\""
 	echo "Usage: ./transform.sh proj_dir ( \"dynamic\" | \"static\" )"

@@ -43,7 +43,7 @@ let testingMode = true;		// do we add console.logs?
 let recurseThroughDirs = true;
 
 // 2 TODO
-if ( (! argv.transform) || ( argv.callgraph && argv.uncovered)) {
+if ( (! argv.transform)) {
     console.log('Usage: stubbifyRunner.js --transform [file.js | dir] [[--callgraph callgraphFile.csv] | [--uncovered coverageReport.json]] [--guarded_exec_mode [true | false]]');
     process.exit(1);
 }
@@ -61,6 +61,7 @@ let listedFiles: string[] = [];
 let noCG : boolean = true;
 let uncoveredMode: boolean = !(argv.uncovered == undefined);
 let depList: string[];
+
 if ( callgraphpath) {
 	let targets: string[] = getTargetsFromACG(callgraphpath);
 	functions = targets.map(buildHappyName);
@@ -70,7 +71,7 @@ if ( callgraphpath) {
 
 if ( uncoveredMode) {
 	let targets: string[] = getTargetsFromCoverageReport(coverageReportPath);
-	functions = targets.map(buildHappyName);
+	functions = functions.concat(targets.map(buildHappyName));
 
 	let all_listedFiles = targets.map(getFileName);
 	all_listedFiles.forEach(element => {
@@ -82,6 +83,12 @@ if ( uncoveredMode) {
 	console.log(listedFiles);
 	console.log(functions);
 } 
+
+if (uncoveredMode && callgraphpath) {
+	// Remove duplicates for efficiency.
+	listedFiles = Array.from(new Set(listedFiles));
+	functions = Array.from(new Set(functions));
+}
 
 if ( argv.dependencies) {
 	depList = fs.readFileSync(argv.dependencies, 'utf-8').split("\n");
