@@ -1,6 +1,8 @@
 
 import * as fs from 'fs';
 import * as babel from '@babel/types';
+import {parse} from '@babel/parser';
+import { default as generate } from '@babel/generator';
 
 /*
     Get an appropriate name from the UID. Appropriate for both variable
@@ -194,4 +196,52 @@ export function buildEvalCheck( callExpNode: babel.CallExpression, inAsyncFct: b
                                                                     babel.blockStatement(tempVarDecls.concat([ifCheckStmt, returnStmt])),
                                                                     inAsyncFct) // whether or not it should be async
     return babel.callExpression( arrowFunc, []);
+}
+
+// generate rollup.stubbifier.config.js in the directory specified
+export function generateBundlerConfig( dirname): void {
+    /*
+        export default {
+          input: 'name of the main file in package.json',
+          output: {
+            dir: 'output',
+            format: 'cjs'
+          },
+          context: 'null',
+          moduleContext: 'null',
+          plugins: [nodeResolve({ moduleDirectories: ['node_modules'] }), commonjs(), babel()]
+        };
+    */
+
+    let mainPath= undefined;
+
+    try {
+        let json = JSON.parse(fs.readFileSync(dirname + "/package.json", 'utf-8'));
+        mainPath = json.main;
+    } catch(e) {} // if there's an error, then we're not using esm
+
+    if( ! mainPath) {
+        mainPath = "index.js"
+    }
+
+    let configBody = 
+    `import nodeResolve from '@rollup/plugin-node-resolve';
+     import babel from '@rollup/plugin-babel';
+     import commonjs from '@rollup/plugin-commonjs';
+     import json from '@rollup/plugin-json';
+
+     export default {
+          input: '${mainPath}',
+          output: {
+            file: 'stubbifyBundle.js',
+            format: 'cjs'
+          },
+          context: 'null',
+          moduleContext: 'null',
+          plugins: [nodeResolve({ moduleDirectories: ['node_modules'] }), commonjs(), babel(), json()]
+        };`;
+
+    configBody = generate( parse(configBody, {sourceType: "unambiguous"}).program).code;
+    fs.writeFileSync( dirname + "/rollup.stubbifier.config.js", configBody);
+
 }

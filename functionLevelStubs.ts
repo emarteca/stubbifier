@@ -22,6 +22,14 @@ function shouldTransformFunction(fctName : string, reachableFuns:string[], uncov
 	// return uncoveredMode? ! fctNotInList : fctNotInList;
 }
 
+function shouldTransformBundlerMode(fctNode : babel.Function) : boolean {
+	if (fctNode.body.type == "BlockStatement") {
+		return generate((<babel.BlockStatement> fctNode.body).body[0]).code == 'eval("STUB_FLAG_STUB_THIS_STUB_FCT");';
+	}
+
+	return false;
+}
+
 function generateNodeUID(n: babel.Node, filename: string, coverageMode: boolean): string {
 	// acorn/src/location.js:<12,12>--<18,1>
 	let locString : string;
@@ -41,7 +49,7 @@ function getNumLinesSpannedByNode( n: babel.Node): number {
 /*
 	processAST: do it
 */
-function processAST(ast: babel.Program, functionsToStub : Map<string, string>, reachableFuns : string[], filename: string, uncoveredMode: boolean, safeEvalMode = false) : babel.Program { 
+function processAST(ast: babel.Program, functionsToStub : Map<string, string>, reachableFuns : string[], filename: string, uncoveredMode: boolean, safeEvalMode = false, bundlerMode = false) : babel.Program { 
 
 	// let funcMap : Map<string, [babel.Identifier[], babel.BlockStatement]> = new Map();
 	let supportedFunctionNodes : string[] = [
@@ -60,7 +68,7 @@ function processAST(ast: babel.Program, functionsToStub : Map<string, string>, r
 				// let functionUIDName = "global::" + path.node.id.name;
 				let functionUIDName = generateNodeUID(path.node, filename, uncoveredMode);
 				// don't forget to write out function body before we replace
-				if( shouldTransformFunction(functionUIDName, reachableFuns, uncoveredMode)) {
+				if( (bundlerMode && shouldTransformBundlerMode(path.node)) || shouldTransformFunction(functionUIDName, reachableFuns, uncoveredMode)) {
 					// console.log("Triggered stubbification.");
 					if (path.node.kind == "constructor" || path.node.generator || path.node.async) { // TODO broken for generators 
 						path.skip(); // don't transform a constructor or anything in a constructor (stubs dont work with "super" and "this")
@@ -77,8 +85,9 @@ function processAST(ast: babel.Program, functionsToStub : Map<string, string>, r
 								path.node.body,
 								path.node.async
 							);
+
 							functionsToStub.set(functionUIDName, generate(afun).code);
-							
+
 							if( path.node.type == "ClassMethod" || path.node.type == "ObjectMethod") {
 								if( !path.node.key.name) {
 									path.node.body = generateNewClassMethodNoID( functionUIDName, path.node.key, path.node.type == "ArrowFunctionExpression");
@@ -197,7 +206,7 @@ function generateNewClassMethodNoID(scopedFctName : string, key : babel.Node, is
 }
 
 function stubifyFile(filename: string, stubspath: string, functionsToStub: Map<string, string>, reachableFuns : string[], uncoveredMode: boolean,
-					 safeEvalMode = false, testingMode = false, zipFiles = false) {
+					 safeEvalMode = false, testingMode = false, zipFiles = false, bundleMode = false) {
 
 	// save the old file 
 	// this might get removed later, but is useful right now for debugging
@@ -216,7 +225,7 @@ function stubifyFile(filename: string, stubspath: string, functionsToStub: Map<s
 	}
 
 	// Preprocess the AST, propagating function ID information to FunctionExpressions.
-	ast = processAST(ast, functionsToStub, reachableFuns, filename, uncoveredMode, safeEvalMode);
+	ast = processAST(ast, functionsToStub, reachableFuns, filename, uncoveredMode, safeEvalMode, bundleMode);
 
 	let setup_stubs: string = "let stubs = new (require('" + stubspath + "/stubbifier_cjs.cjs'))('" + filename + "', " + testingMode + ");";
 	if(esmMode) {
@@ -240,7 +249,7 @@ function stubifyFile(filename: string, stubspath: string, functionsToStub: Map<s
 
 	// console.log(generate(ast).code)
 	// write out the stub, overwriting the old file
-	fs.writeFileSync( filename, generate(ast).code);
+	fs.writeFileSync( filename, generate(ast).code.split('eval("STUB_FLAG_STUB_THIS_STUB_FCT");').join("\n"));
 
 	// make the directory, so there can be a file added to it for each function processed
 	// only create the dir if it doesn't already exist
@@ -251,6 +260,9 @@ function stubifyFile(filename: string, stubspath: string, functionsToStub: Map<s
 	// then, write out all the functions to be stubbified 
 	// forEach for a map iterates over: value, key
 	functionsToStub.forEach( ( fctBody, fctName, map) => {
+		if(bundleMode) {
+			fctBody = fctBody.split('eval("STUB_FLAG_STUB_THIS_STUB_FCT");').join("\n");
+		}
 		let stubFileBody: string = "let " + fctName + " = " + fctBody + "; \n\n" + fctName + ";"
 
 		// TODO: currently in safeEvalMode we check to see if console.log is eval

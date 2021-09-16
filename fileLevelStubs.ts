@@ -278,7 +278,6 @@ function stubifyFile(filename: string, safeEvalMode = false, testingMode = false
 	let codeBodyOutput: string = generate(ast).code;
 	if (safeEvalMode) {
 		codeBodyOutput = "let dangerousFunctions = [eval]; if( process){dangerousFunctions += [process.exec]}; dangerousFunctions += [require('child_process').execSync, require('child_process').exec];" + codeBodyOutput;
-	
 	}
 
 	if (!esmMode) {
