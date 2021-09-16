@@ -63,8 +63,10 @@ console.log('Reading ' + filename);
 // callgraph -- passing none fun stubs everything
 let callgraphpath : string = argv.callgraph;
 let coverageReportPath: string = argv.uncovered;
+let removeFunsPath = argv.removeFuns;
 let functions : string[] = [];
 let listedFiles: string[] = [];
+let removeFuns : string[] = [];
 let noCG : boolean = true;
 let uncoveredMode: boolean = !(argv.uncovered == undefined);
 let depList: string[];
@@ -75,6 +77,10 @@ if ( callgraphpath) {
 	noCG = false;
 }
 let zipFiles = false; // Currently don't ever do this.
+
+if (removeFunsPath) {
+	removeFuns = getTargetsFromACG(removeFunsPath).map(buildHappyName);
+}
 
 if ( uncoveredMode) {
 	let targets: string[] = getTargetsFromCoverageReport(coverageReportPath);
@@ -146,7 +152,7 @@ if (bundlerMode) {
 
 	// Once bundled, we need to read in the bundle and stubbify the functions with
 	// the eval.
-	functionStubFile(path.resolve(filename) + '/stubbifyBundle.js', process.cwd(), new Map(), functions, uncoveredMode, safeEvalMode, testingMode, zipFiles, true);
+	functionStubFile(path.resolve(filename) + '/stubbifyBundle.js', process.cwd(), new Map(), functions, removeFuns, uncoveredMode, safeEvalMode, testingMode, zipFiles, true);
 } else {
 	// stubbing section; no bundling 
 	if( fs.lstatSync(filename).isDirectory()) {
@@ -165,7 +171,7 @@ if (bundlerMode) {
 					console.log("FUNCTION CASE: " + curPath);
 
 					try {
-						functionStubFile(curPath, process.cwd(), new Map(), functions, uncoveredMode, safeEvalMode, testingMode);
+						functionStubFile(curPath, process.cwd(), new Map(), functions, removeFuns, uncoveredMode, safeEvalMode, testingMode);
 					}catch(e) {
 						console.log("ERROR: cannot stubbify function in: " + curPath);
 						// console.log(e);

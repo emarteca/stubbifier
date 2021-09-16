@@ -1,12 +1,12 @@
 import * as fs from "fs";
-import {parse} from '@babel/parser';
+import { parse } from '@babel/parser';
 import { default as generate } from '@babel/generator';
-import {transformFromAstSync} from '@babel/core';
+import { transformFromAstSync } from '@babel/core';
 import * as babel from '@babel/types';
 import * as tar from 'tar';
 import * as path from 'path';
 
-import {getTargetsFromACG, buildHappyName, buildEvalCheck, getFileName} from './ACGParseUtils.js';
+import {buildHappyName, buildEvalCheck} from './ACGParseUtils.js';
 
 const MIN_FCT_STUB_LENGTH = 5; // only stub functions that are > 5 lines long
 
@@ -18,8 +18,11 @@ const MIN_FCT_STUB_LENGTH = 5; // only stub functions that are > 5 lines long
 function shouldTransformFunction(fctName : string, reachableFuns:string[], uncoveredMode: boolean): boolean {
 	let fctNotInList: boolean = (reachableFuns.indexOf(fctName) == -1);
 	return fctNotInList;
-	// Trying to reverse the logic.
-	// return uncoveredMode? ! fctNotInList : fctNotInList;
+}
+
+// Remove a function if it is specified in the list of functions to remove.
+function shouldRemoveFunction(fctName : string, removeFuns : string[]) {
+	return removeFuns.indexOf(fctName) != -1;
 }
 
 function shouldTransformBundlerMode(fctNode : babel.Function) : boolean {
@@ -49,7 +52,14 @@ function getNumLinesSpannedByNode( n: babel.Node): number {
 /*
 	processAST: do it
 */
-function processAST(ast: babel.Program, functionsToStub : Map<string, string>, reachableFuns : string[], filename: string, uncoveredMode: boolean, safeEvalMode = false, bundlerMode = false) : babel.Program { 
+function processAST(ast: babel.Program, 
+					functionsToStub : Map<string, string>, 
+					reachableFuns : string[], 
+					filename: string, 
+					uncoveredMode: boolean, 
+					safeEvalMode = false, 
+					bundlerMode = false,
+					removeFuns) : babel.Program { 
 
 	// let funcMap : Map<string, [babel.Identifier[], babel.BlockStatement]> = new Map();
 	let supportedFunctionNodes : string[] = [
@@ -68,9 +78,21 @@ function processAST(ast: babel.Program, functionsToStub : Map<string, string>, r
 				// let functionUIDName = "global::" + path.node.id.name;
 				let functionUIDName = generateNodeUID(path.node, filename, uncoveredMode);
 				// don't forget to write out function body before we replace
-				if( (bundlerMode && shouldTransformBundlerMode(path.node)) || shouldTransformFunction(functionUIDName, reachableFuns, uncoveredMode)) {
+				if (shouldRemoveFunction(functionUIDName, removeFuns)) {
+					// This if is duplicated from below.
+					if (path.node.kind == "constructor" || path.node.generator || path.node.async) { // TODO broken for generators -- is this true?
+						path.skip(); // don't transform a constructor or anything in a constructor (stubs dont work with "super" and "this")
+					} else {
+						path.node.body = babel.blockStatement([babel.throwStatement(
+							babel.newExpression(
+								babel.identifier("Error"),
+								[babel.stringLiteral('[Stubbifier] Function was removed!')]	
+							)
+						)]);
+					}
+				} else if ((bundlerMode && shouldTransformBundlerMode(path.node)) || shouldTransformFunction(functionUIDName, reachableFuns, uncoveredMode)) {
 					// console.log("Triggered stubbification.");
-					if (path.node.kind == "constructor" || path.node.generator || path.node.async) { // TODO broken for generators 
+					if (path.node.kind == "constructor" || path.node.generator || path.node.async) { // TODO broken for generators -- is this true?
 						path.skip(); // don't transform a constructor or anything in a constructor (stubs dont work with "super" and "this")
 					} else {
 						let inClassOrObjMethod: babel.Node = path.findParent((path) => { 
@@ -128,7 +150,6 @@ function processAST(ast: babel.Program, functionsToStub : Map<string, string>, r
 			}
 		},
 	}}}]});
-
 
 	return output.ast;
 }
@@ -205,7 +226,7 @@ function generateNewClassMethodNoID(scopedFctName : string, key : babel.Node, is
 										 plugins: [ "classProperties"]}).program.body);
 }
 
-function stubifyFile(filename: string, stubspath: string, functionsToStub: Map<string, string>, reachableFuns : string[], uncoveredMode: boolean,
+function stubifyFile(filename: string, stubspath: string, functionsToStub: Map<string, string>, reachableFuns : string[], removeFuns : string[], uncoveredMode: boolean,
 					 safeEvalMode = false, testingMode = false, zipFiles = false, bundleMode = false) {
 
 	// save the old file 
@@ -225,7 +246,7 @@ function stubifyFile(filename: string, stubspath: string, functionsToStub: Map<s
 	}
 
 	// Preprocess the AST, propagating function ID information to FunctionExpressions.
-	ast = processAST(ast, functionsToStub, reachableFuns, filename, uncoveredMode, safeEvalMode, bundleMode);
+	ast = processAST(ast, functionsToStub, reachableFuns, filename, uncoveredMode, safeEvalMode, bundleMode, removeFuns);
 
 	let setup_stubs: string = "let stubs = new (require('" + stubspath + "/stubbifier_cjs.cjs'))('" + filename + "', " + testingMode + ");";
 	if(esmMode) {

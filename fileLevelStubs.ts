@@ -1,17 +1,12 @@
 import * as fs from "fs";
-// import * as es from 'esprima';
-// import {generate} from 'escodegen';
-// import { visit, namedTypes as n, builders as b} from "ast-types";
-import {parse} from '@babel/parser';
-// import {traverse} from '@babel/traverse';
-import { default as traverse } from '@babel/traverse';
+import { parse } from '@babel/parser';
 import { default as generate } from '@babel/generator';
-import {transformFromAstSync} from '@babel/core';
+import { transformFromAstSync } from '@babel/core';
 import * as babel from '@babel/types';
 import * as zlib from 'zlib';
-import {Readable} from 'stream';
+import { Readable } from 'stream';
 
-import {buildEvalCheck} from './ACGParseUtils.js';
+import { buildEvalCheck } from './ACGParseUtils.js';
 
 const MIN_FILE_STUB_LENGTH = 5; // only stub files that are > 5 lines
 
