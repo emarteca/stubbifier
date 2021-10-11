@@ -10,15 +10,12 @@ realpathMACHACK() {
 transformType=$2
 projDir=$1
 guardedMode="true"
-bundlerMode="no"
+bundlerMode="stub_bundle"
 
 if [ "$#" -ge 3 ]; then
 	guardedMode=$3
 fi
 
-if [ "$#" -ge 4 ]; then    
-        bundlerMode=$4    
-fi 
 
 if [[ "$transformType" == "dynamic" ]]; then
 	node stubbifyRunner.js --transform $projDir --uncovered `realpathMACHACK $projDir/coverage/coverage-final.json` --dependencies $projDir/dep_list.txt --guarded_exec_mode $guardedMode --bundler_mode $bundlerMode

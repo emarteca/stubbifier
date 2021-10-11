@@ -41,10 +41,19 @@ let safeEvalMode = true;	// do we try to intercept evals? default is true
 if (argv.guarded_exec_mode == "false") 
 	safeEvalMode = false;
 
-let bundlerMode = false;	// default: don't bundle
+let bundlerMode = "no";	// default: don't bundle
 
-if (argv.bundler_mode == "true") 
-	bundlerMode = true;
+// valid options are:
+// "no" : dont bundle
+// "only_bundle" : bundle but don't stub anything
+// "stub_bundle" : stub an existing bundle file (this requires the bundle to have been previously created)
+// "bundle_and_stub" : both stub and bundle
+if (argv.bundler_mode) 
+	bundlerMode = argv.bundler_mode;
+if (bundlerMode != "no" && bundlerMode != "only_bundle" && bundlerMode != "stub_bundle" && bundlerMode != "bundle_and_stub") {
+	console.log("Invalid bundle option provided: " + bundlerMode + "; proceeding without bundling");
+	bundlerMode = "no";
+}
 
 let testingMode = true;		// do we add console.logs?
 let recurseThroughDirs = true;
@@ -101,58 +110,61 @@ if ( argv.dependencies) {
 	depList = fs.readFileSync(argv.dependencies, 'utf-8').split("\n");
 }
 
-if (bundlerMode) {
-	let files = getAllFiles( filename, recurseThroughDirs);
-	
-	files.forEach(function(file, index) {
-		let curPath: string = filename + file;
-		curPath = file;
-		if( shouldStubbify( curPath, file, depList)) { // don't even try to stub externs
+if (bundlerMode != "no") {
+	if (bundlerMode == "bundle_and_stub" || bundlerMode == "only_bundle") {
+		let files = getAllFiles( filename, recurseThroughDirs);
+		
+		files.forEach(function(file, index) {
+			let curPath: string = filename + file;
+			curPath = file;
+			if( shouldStubbify( curPath, file, depList)) { // don't even try to stub externs
 
-			if( noCG || listedFiles.indexOf(curPath) > -1) { // file is reachable, so only stubify functions
-				console.log("FUNCTION CASE: flagging to be stubbed: " + curPath);
+				if( noCG || listedFiles.indexOf(curPath) > -1) { // file is reachable, so only stubify functions
+					console.log("FUNCTION CASE: flagging to be stubbed: " + curPath);
 
-				try {
-					flagFunctionForStubbing(curPath, process.cwd(), functions, uncoveredMode);
-				}catch(e) {
-					console.log("ERROR: cannot stubbify function in: " + curPath);
-				}
-			} else {
-				console.log("FILE CASE: flagging all functions to be stubbed in: " + curPath);
-				
-				try {
-					flagFunctionForStubbing(curPath, process.cwd(), [], uncoveredMode);
-				}catch(e) {
-					console.log("ERROR: cannot stubbify all functions in file: " + curPath);
-					// console.log(e);
+					try {
+						flagFunctionForStubbing(curPath, process.cwd(), functions, uncoveredMode);
+					}catch(e) {
+						console.log("ERROR: cannot stubbify function in: " + curPath);
+					}
+				} else {
+					console.log("FILE CASE: flagging all functions to be stubbed in: " + curPath);
+					
+					try {
+						flagFunctionForStubbing(curPath, process.cwd(), [], uncoveredMode);
+					}catch(e) {
+						console.log("ERROR: cannot stubbify all functions in file: " + curPath);
+						// console.log(e);
+					}
 				}
 			}
-		}
-	});
-	// By now, the functions that should be stubbed are flagged as such with 
-	// eva("STUB_FLAG_STUB_THIS_STUB_FCT") as the first thing in the function body.
+		});
+		// By now, the functions that should be stubbed are flagged as such with 
+		// eva("STUB_FLAG_STUB_THIS_STUB_FCT") as the first thing in the function body.
 
-	// Now, we need to call the bundler.
-	// To do this, we should just dispatch a shell command which invokes the bundler.
-	// Notes:
-	// 1. Bundler needs to be installed globally.
-	// 2. Bundler needs to be called from the project being stubbified.
-	// 3. Bundler config file is needed. 
-		
-	// create bundler config file
-	generateBundlerConfig(path.resolve(filename));
-	// cd into project directory (filename is the path to the tgt project)
-	// save current directory first to chdir back
-	let stubsDir = process.cwd();
-	process.chdir(path.resolve(filename));
-	// call bundler
-	execSync('rollup --config rollup.stubbifier.config.js');
-	// cd back into stubbifier
-	process.chdir(stubsDir);
+		// Now, we need to call the bundler.
+		// To do this, we should just dispatch a shell command which invokes the bundler.
+		// Notes:
+		// 1. Bundler needs to be installed globally.
+		// 2. Bundler needs to be called from the project being stubbified.
+		// 3. Bundler config file is needed. 
+			
+		// create bundler config file
+		generateBundlerConfig(path.resolve(filename));
+		// cd into project directory (filename is the path to the tgt project)
+		// save current directory first to chdir back
+		let stubsDir = process.cwd();
+		process.chdir(path.resolve(filename));
+		// call bundler
+		execSync('rollup --config rollup.stubbifier.config.js');
+		// cd back into stubbifier
+		process.chdir(stubsDir);
+	}
 
 	// Once bundled, we need to read in the bundle and stubbify the functions with
 	// the eval.
-	functionStubFile(path.resolve(filename) + '/stubbifyBundle.js', process.cwd(), new Map(), functions, removeFuns, uncoveredMode, safeEvalMode, testingMode, zipFiles, true);
+	if (bundlerMode == "bundle_and_stub" || bundlerMode == "stub_bundle")
+		functionStubFile(path.resolve(filename) + '/stubbifyBundle.js', process.cwd(), new Map(), functions, removeFuns, uncoveredMode, safeEvalMode, testingMode, zipFiles, true);
 } else {
 	// stubbing section; no bundling 
 	if( fs.lstatSync(filename).isDirectory()) {
