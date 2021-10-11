@@ -88,11 +88,18 @@ function processASTForFlagging(ast: babel.Program, reachableFuns : string[], fil
 					if (path.node.kind == "constructor" || path.node.generator || path.node.async) { // TODO broken for generators 
 						path.skip(); // don't transform a constructor or anything in a constructor (stubs dont work with "super" and "this")
 					} else {
-						let flaggedParent = path.findParent((path) => (<any>path.node).isFlagged);
-						if (!flaggedParent){
-							let flaggingStmt: babel.ExpressionStatement = get_stub_flag();
-							path.node.body.body = [flaggingStmt].concat(path.node.body.body);
-							(<any> path.node).isFlagged = true;
+						let checkForFlagging = true;
+						if (path.node.body.type == "BlockStatement" && path.node.body.body.length() > 0) {
+							let firstBodyStmtCode = generate((<babel.BlockStatement> path.node.body).body[0]).code;
+							checkForFlagging = firstBodyStmtCode != 'eval("STUBBIFIER_DONT_STUB_ME");'
+						} 
+						if (checkForFlagging) {
+							let flaggedParent = path.findParent((path) => (<any>path.node).isFlagged);
+							if (!flaggedParent){
+								let flaggingStmt: babel.ExpressionStatement = get_stub_flag();
+								path.node.body.body = [flaggingStmt].concat(path.node.body.body);
+								(<any> path.node).isFlagged = true;
+							}
 						}
 					}
 				}	
