@@ -18,7 +18,7 @@ const MIN_FCT_STUB_LENGTH = 5; // only stub functions that are > 5 lines long
 function shouldTransformFunction(fctName : string, reachableFuns:string[], uncoveredMode: boolean, fctNode: babel.Function): boolean {
 	let fctNotInList: boolean = (reachableFuns.indexOf(fctName) == -1);
 	if (fctNode.body.type == "BlockStatement") {
-		fctNotInList = fctNotInList && (generate((<babel.BlockStatement> fctNode.body).body[0]).code != 'eval("STUBBIFIER_DONT_STUB_ME");');
+		fctNotInList = fctNotInList && (!generate((<babel.BlockStatement> fctNode.body).body[0]).code.startsWith('eval("STUBBIFIER_DONT_STUB_ME");'));
 	}
 	return fctNotInList;
 }
@@ -93,7 +93,7 @@ function processAST(ast: babel.Program,
 							)
 						)]);
 					}
-				} else if ((bundlerMode && shouldTransformBundlerMode(path.node)) || (!bundlerMode && shouldTransformFunction(functionUIDName, reachableFuns, uncoveredMode, path.node))) {
+				} else if ((bundlerMode && shouldTransformBundlerMode(path.node)) || (shouldTransformFunction(functionUIDName, reachableFuns, uncoveredMode, path.node))) {
 					// console.log("Triggered stubbification.");
 					if (path.node.kind == "constructor" || path.node.generator || path.node.async) { // TODO broken for generators -- is this true?
 						path.skip(); // don't transform a constructor or anything in a constructor (stubs dont work with "super" and "this")
