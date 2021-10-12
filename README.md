@@ -131,6 +131,27 @@ With today (January 20, 2021)'s master clone of `serve-static` and its installed
 * Before stubbifying: 106267 bytes
 * After stubbifying with the dynamic callgraph: 92824 bytes
 
+### Manual intervention: specifying functions to *not* stub
+Users might want to avoid some functions ever being stubbed, independent of the results of the callgraph.
+To avoid a function ever being stubbed, add the following line of code as the **first** line in the function in question: `eval("STUBBIFIER_DONT_STUB_ME");`.
+
+For example, given a function
+```
+function dontStubMe() { 
+  console.log("hello");
+  // ...
+}
+```
+
+To specify this function should never be stubbed, rewrite it as:
+```
+function dontStubMe() { 
+  eval("STUBBIFIER_DONT_STUB_ME");
+  console.log("hello");
+  // ...
+}
+```
+
 ## Running outside docker
 
 Of course, this can be used outside the docker container provided.
