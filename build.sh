@@ -26,6 +26,7 @@ echo "alias python=python3" >> /root/.bashrc
 echo "alias vi=vim" >> /root/.bashrc
 
 npm install -g mocha
+npm install -g jest
 npm install -g nyc
 npm install -g typescript
 
