@@ -29,7 +29,7 @@ npm install -g mocha
 npm install -g jest
 npm install -g nyc
 npm install -g typescript
-
+npm install -g rollup 
 
 node --version
 npm --version

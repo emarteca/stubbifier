@@ -155,6 +155,8 @@ if (bundlerMode != "no") {
 		// save current directory first to chdir back
 		let stubsDir = process.cwd();
 		process.chdir(path.resolve(filename));
+		// install bundler dependencies
+		execSync('npm install @rollup/plugin-node-resolve @rollup/plugin-babel @rollup/plugin-commonjs @rollup/plugin-json')
 		// call bundler
 		execSync('rollup --config rollup.stubbifier.config.js');
 		// cd back into stubbifier

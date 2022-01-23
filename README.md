@@ -109,6 +109,58 @@ cd ../..
 ./transform.sh Playground/serve-static "static"
 ```
 
+### Integration with bundlers
+We also support integration with `rollup`, a popular JavaScript bundler.
+`bundler_mode` is another mode of `stubbifier` execution, with options:
+* `"no"`: no application of `rollup` at all; this is the default
+* `"only_bundle"`: bundle the application but do not stubbify it
+* `"bundle_and_stub"`: bundle the application, and then stubbify the bundle
+
+Note that our automated application of `rollup` generates a general `rollup` configuration file.
+If the application is not designed to be bundled this may not produce a functioning bundle (for example, if the project contains dependencies that are not compatible with `rollup`).
+
+Note also that running the application's test suite will not execute the bundle, since the test suite is not configured to work with the bundle.
+
+
+Example of bundler usage, using `serve-static` again:
+```
+# first reset the serve-static project
+./resetProject.sh Playground/serve-static
+
+# now, transform with bundler mode "bundle_and_stub", and guarded execution mode as false
+./transform.sh Playground/serve-static "dynamic" false "bundle_and_stub"
+```
+The stubbed bundle is now the new file `Playground/serve-static/stubbifyBundle.js`.
+
+To interact with the bundle, you can load it into `node` and see it is the same as the unbundled/unstubbed `serve-static` package.
+```
+cd Playground/serve-static
+
+node
+> let ss_bundle = require('./stubbifyBundle.js');
+[STUBBIFIER METRICS] FUNCTION STUB HAS BEEN EXPANDED: ... # some stubs will be expanded
+> ss_bundle
+# [redacted] large object printed, with the last fields being:
+        'video/x-ms-vob': 'vob',
+        'video/x-ms-wm': 'wm',
+        'video/x-ms-wmv': 'wmv',
+        'video/x-ms-wmx': 'wmx',
+        'video/x-ms-wvx': 'wvx',
+        'video/x-msvideo': 'avi',
+        'video/x-sgi-movie': 'movie',
+        'video/x-smv': 'smv',
+        'x-conference/x-cooltalk': 'ice' },
+     default_type: 'application/octet-stream',
+     Mime: [Function: Mime],
+     charsets: { lookup: [Function: lookup] } } }
+>
+>
+> # if you want to compare to the original (i.e., unbundled and unstubbed) serve-static
+> let ss_orig = require('./index.js.original');
+> ss_orig
+# [redacted] same large object printed, with the same last fields as the bundle
+```
+
 ### Computing code size (how much was debloated?)
 To determine the size reduction due to running `stubbifier` on `redux`, run the following command before and after applying the stubbifier and compare the sizes.
 ```
