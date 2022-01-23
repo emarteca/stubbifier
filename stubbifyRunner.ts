@@ -60,7 +60,7 @@ let recurseThroughDirs = true;
 
 // 2 TODO
 if ( (! argv.transform) || ( argv.callgraph && argv.uncovered)) {
-    console.log('Usage: stubbifyRunner.js --transform [file.js | dir] [[--callgraph callgraphFile.csv] | [--uncovered coverageReport.json]] [--guarded_exec_mode [true | false]] [--bundler_mode [true | false]]');
+    console.log('Usage: stubbifyRunner.js --transform [file.js | dir] [[--callgraph callgraphFile.csv] | [--uncovered coverageReport.json]] [--guarded_exec_mode [true | false]] [--bundler_mode [true | false]] [--removeFuns file_of_list_of_functions_to_completely_remove]');
     process.exit(1);
 }
 
