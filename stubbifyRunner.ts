@@ -6,6 +6,7 @@ import { fileStubFile} from './fileLevelStubs.js'
 import {getTargetsFromACG, getTargetsFromCoverageReport, buildHappyName, buildEvalCheck, getFileName, generateBundlerConfig} from './ACGParseUtils.js';
 import {argv} from 'yargs';
 import { execSync } from "child_process";
+import { debugPort } from "process";
 
 const getAllFiles = function( dirname, recurse = false, listOfFiles = []) {
 	let baseListOfFiles = fs.readdirSync( dirname);
@@ -79,6 +80,7 @@ let removeFuns : string[] = [];
 let noCG : boolean = true;
 let uncoveredMode: boolean = !(argv.uncovered == undefined);
 let depList: string[];
+
 if ( callgraphpath) {
 	let targets: string[] = getTargetsFromACG(callgraphpath);
 	functions = targets.map(buildHappyName);
@@ -88,7 +90,10 @@ if ( callgraphpath) {
 let zipFiles = false; // Currently don't ever do this.
 
 if (removeFunsPath) {
-	removeFuns = getTargetsFromACG(removeFunsPath).map(buildHappyName);
+	const targetsForRemoval = getTargetsFromACG(removeFunsPath);
+	listedFiles = listedFiles.concat(targetsForRemoval.map(getFileName));
+	removeFuns = targetsForRemoval.map(buildHappyName);
+	noCG = false;
 }
 
 if ( uncoveredMode) {
@@ -101,9 +106,6 @@ if ( uncoveredMode) {
 			listedFiles.push(element);
 	});
 	noCG = false;
-
-	console.log(listedFiles);
-	console.log(functions);
 } 
 
 if ( argv.dependencies) {
@@ -175,8 +177,8 @@ if (bundlerMode != "no") {
 		files.forEach(function(file, index) {
 			// console.log(file);
 			// only stubify JS files
-			let curPath: string = filename + file;
-			curPath = file;
+			// let curPath: string = filename + file;
+			const curPath = file;
 			// console.log("decision: " + shouldStubbify(curPath, file, depList));
 			// let curAbsPath: string = process.cwd() + curPath;
 			if( shouldStubbify( curPath, file, depList)) { // don't even try to stub externs
