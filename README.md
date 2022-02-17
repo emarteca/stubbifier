@@ -106,6 +106,23 @@ cd ../..
 ./transform.sh Playground/serve-static "static"
 ```
 
+#### Remove Functions in `serve-static`
+
+Stubbifier also supports a `--removeFuns <>` option, allowing users to specify a set of functions that should be totally removed from an application.
+The format of the file should match the format of the static callgraph; thus, we illustrate this functionality with `serve-static` using the static CG:
+
+```
+./resetProject.sh Playground/serve-static
+
+# If you haven't already: ./genStaticCG.sh Playground/serve-static serve-static 
+
+# 
+./remove.sh Playground/serve-static "static"
+```
+
+This should (1) remove all functions detected with the static call graph, and stub the rest. 
+If you look at, e.g., index.js (`vim Playground/serve-static/index.js`), you should see a mix of removed functions and stubbed functions.
+
 ### Integration with bundlers
 We also support integration with `rollup`, a popular JavaScript bundler.
 `bundler_mode` is another mode of `stubbifier` execution, with options:
